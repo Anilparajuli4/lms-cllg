@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or mysql/sqlite
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  password       String
+  profilePicture String?
+  role           Role            @default(STUDENT)
+  courses        Course[]        @relation("TeacherCourses") // if teacher
+  enrollments    Enrollment[]
+  reviews        Review[]
+  // progresses     Progress[]
+  payments       Payment[]
+  // completions    Completion[]
+  teacherRequest TeacherRequest?
+}
+
+model Course {
+  id           String       @id @default(uuid())
+  title        String
+  description  String
+  thumbnailUrl String
+  category     String
+  teacherId    String
+  teacher      User         @relation("TeacherCourses", fields: [teacherId], references: [id])
+  videos       Video[]
+  enrollments  Enrollment[]
+  // progresses   Progress[]
+  // completions  Completion[]
+  reviews      Review[]
+  payments     Payment[]
+  price        Float?
+  status       CourseStatus @default(PENDING)
+  adminMessage String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Video {
+  id         String     @id @default(uuid())
+  title      String
+  url        String
+  isIntro    Boolean    @default(false) // first video visible to everyone
+  courseId   String
+  course     Course     @relation(fields: [courseId], references: [id])
+  // progresses Progress[]
+  createdAt  DateTime   @default(now())
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  studentId String
+  courseId  String
+  student   User     @relation(fields: [studentId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+  // payment   Payment? @relation(fields: [paymentId], references: [id])
+  paymentId String?  @unique // Make nullable if enrollment can exist before payment
+}
+
+
+
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Int // e.g. 1 to 5
+  comment   String
+  userId    String
+  courseId  String
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  pidx            String        @unique
+  amount          Float
+  status          PaymentStatus
+  transactionId   String?
+  purchaseOrderId String
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  courseId        String
+  course          Course        @relation(fields: [courseId], references: [id])
+  createdAt       DateTime      @default(now())
+  // enrollment      Enrollment?
+  verifiedAt      DateTime?
+}
+
+model TeacherRequest {
+  id         String        @id @default(uuid())
+  userId     String        @unique
+  user       User          @relation(fields: [userId], references: [id])
+  message    String?
+  status     RequestStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  reviewedAt DateTime?
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum PaymentStatus {
+  INITIATED
+  COMPLETED
+  FAILED
+  PENDING
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum CourseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
+
+
+
+
+// model Progress {
+//   id        String   @id @default(uuid())
+//   studentId String
+//   courseId  String
+//   videoId   String
+//   student   User     @relation(fields: [studentId], references: [id])
+//   course    Course   @relation(fields: [courseId], references: [id])
+//   video     Video    @relation(fields: [videoId], references: [id])
+//   createdAt DateTime @default(now())
+// }
+
+
+// model Completion {
+//   id          String   @id @default(uuid())
+//   studentId   String
+//   courseId    String
+//   student     User     @relation(fields: [studentId], references: [id])
+//   course      Course   @relation(fields: [courseId], references: [id])
+//   completedAt DateTime @default(now())
+// }
+
